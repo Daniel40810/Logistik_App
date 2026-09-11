@@ -486,10 +486,11 @@ public final class Leitstand {
         new SwingWorker<Object[], Void>() {
             @Override
             protected Object[] doInBackground() throws Exception {
-                List<OrtAnlage> anlagen = StammdatenCsv.importiereStaedte(datei);
+                StammdatenCsv.ImportDaten daten = StammdatenCsv.importiere(datei);
                 int neu = 0;
+                int containerNeu = 0;
                 List<String> fehler = new java.util.ArrayList<String>();
-                for (OrtAnlage a : anlagen) {
+                for (OrtAnlage a : daten.orte) {
                     try {
                         d.ortAnlegen(a);
                         neu++;
@@ -497,7 +498,31 @@ public final class Leitstand {
                         fehler.add(a.getName() + ": " + e.getMessage());
                     }
                 }
-                return new Object[] {Integer.valueOf(neu), fehler, d.orte()};
+                Map<String, Ort> nachName = new HashMap<String, Ort>();
+                for (Ort o : d.orte()) {
+                    nachName.put(o.getName().toLowerCase(java.util.Locale.GERMANY), o);
+                }
+                for (StammdatenCsv.ContainerImport ci : daten.container) {
+                    Ort o = nachName.get(ci.getOrtName().toLowerCase(java.util.Locale.GERMANY));
+                    if (o == null) {
+                        fehler.add(ci.getOrtName() + ": Stadt für Container nicht gefunden");
+                        continue;
+                    }
+                    if (ci.getAnzahl() <= 0 || ci.getAnzahl() > 1000) {
+                        fehler.add(ci.getOrtName() + ": Anzahl muss zwischen 1 und 1000 liegen");
+                        continue;
+                    }
+                    for (int i = 0; i < ci.getAnzahl(); i++) {
+                        try {
+                            d.containerAnlegen(new com.dan.logistikapp.model.ContainerAnlage(null,
+                                    ci.getGroesseFuss(), ci.getWareCode(), o.getOrtId()));
+                            containerNeu++;
+                        } catch (com.dan.logistikapp.dienst.DienstFehler e) {
+                            fehler.add(ci.getOrtName() + ": " + e.getMessage());
+                        }
+                    }
+                }
+                return new Object[] {Integer.valueOf(neu), Integer.valueOf(containerNeu), fehler, d.orte(), d.container()};
             }
 
             @Override
@@ -507,11 +532,12 @@ public final class Leitstand {
                 try {
                     Object[] r = get();
                     karte.setOrte((List<Ort>) r[2]);
-                    List<String> fehler = (List<String>) r[1];
-                    String text = r[0] + " Städte importiert";
+                    List<String> fehler = (List<String>) r[2];
+                    String text = r[0] + " Städte und " + r[1] + " Container importiert";
                     if (!fehler.isEmpty()) {
                         text += " · " + fehler.size() + " übersprungen";
                     }
+                    karte.setContainerStand((List<com.dan.logistikapp.model.ContainerInfo>) r[4]);
                     karte.zeigeHinweis(text);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();

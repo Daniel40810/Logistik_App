@@ -105,7 +105,7 @@ public final class LogistikApp {
             @Override
             public java.io.File importDatei() {
                 javax.swing.JFileChooser wahl = new javax.swing.JFileChooser();
-                wahl.setDialogTitle("staedte.csv zum Import auswählen");
+                wahl.setDialogTitle("stammdaten_import.csv zum Import auswählen");
                 wahl.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("CSV-Dateien", "csv"));
                 return wahl.showOpenDialog(frame) == javax.swing.JFileChooser.APPROVE_OPTION
                         ? wahl.getSelectedFile() : null;

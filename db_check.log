@@ -1,0 +1,217 @@
+Logistik_App - Durchstich Phase 1 (Datenbank)
+Zeit : 11.09.2026 20:13:37
+URL  : jdbc:oracle:thin:@//localhost:1521/PDBORCL   Benutzer: DEMO
+
+
+A  Aufbau
+---------------------------------------------------------
+   [ok]     Fuenf LOG-Tabellen vorhanden
+   [ok]     Keine ungueltigen LOG-Objekte   - 0 ungueltig
+   [ok]     LOG_API Spezifikation und Rumpf gueltig
+   [ok]     Fuenf Sichten vorhanden
+   [ok]     Schluessel ueber Sequenz, keine IDENTITY-Spalte   - 5 LOG-Sequenzen (5 von 5 erwarteten), 0 IDENTITY-Spalten
+   [ok]     Spatial-Index auf den Staedten benutzbar   - Status VALID
+
+B  Zonen - die Staedteliste aus dem Auftrag
+---------------------------------------------------------
+   [ok]     München ist INLAND   - Datenbank: INLAND
+   [ok]     Hamburg ist INLAND   - Datenbank: INLAND
+   [ok]     Köln ist INLAND   - Datenbank: INLAND
+   [ok]     Berlin ist INLAND   - Datenbank: INLAND
+   [ok]     Paris ist EU   - Datenbank: EU
+   [ok]     Warschau ist EU   - Datenbank: EU
+   [ok]     Barcelona ist EU   - Datenbank: EU
+   [ok]     Oslo ist DRITTLAND   - Datenbank: DRITTLAND
+   [ok]     London ist DRITTLAND   - Datenbank: DRITTLAND
+   [ok]     Zürich ist DRITTLAND   - Datenbank: DRITTLAND
+   [ok]     Genau zehn Staedte, keine ueberzaehlige
+   [ok]     Genau ein Land ist Inland, und das ist DE
+   [ok]     Schweiz: Schengen ja, Zollunion nein   - genau die Unterscheidung, an der der Zoll haengt
+   [ok]     Zweites Inland-Land wird abgewiesen   - ORA-1
+   [ok]     EU-Mitglied ausserhalb der Zollunion wird abgewiesen   - ORA-2290
+
+C  Geometrie und Entfernung
+---------------------------------------------------------
+   [ok]     Alle Stadtpunkte sind gueltige Geometrien   - 0 ungueltig
+   [ok]     Alle Stadtpunkte in SRID 8307
+   [ok]     Laenge vor Breite: alle Punkte liegen in Europa   - vertauschte Achsen landeten in Afrika oder im Eismeer
+   [ok]     Entfernung aller 45 Paare: Oracle und Java einig   - groesste Abweichung 0,322 % (Berlin-Warschau)
+   [ok]     Entfernung ist symmetrisch
+   [ok]     Hamburg-Oslo rund 710 km Luftlinie   - 710,0 km
+
+D  Kennung nach ISO 6346
+---------------------------------------------------------
+   [ok]     Referenz CSQU 305438 3 (Datenbank)
+   [ok]     Referenz CSQU 305438 3 (Java)
+   [ok]     DANU 100001 5 gueltig, DANU 100001 6 nicht
+   [ok]     Formatfehler werden erkannt (Kategorie X, Ziffer zu wenig)
+   [ok]     DANU-Serien 0..999: Datenbank und Java einig   - 1000 verglichen
+   [ok]     300 zufaellige Eigentuemer: Datenbank und Java einig   - alle Buchstaben an allen Stellen
+   [ok]     Alle Container-Kennungen gueltig (von Java nachgeprueft)   - 18 Container
+   [ok]     Erster Container heisst DANU 100001 5
+   [ok]     Trigger weist falsche Pruefziffer ab   - ORA-20010
+   [ok]     Fremdkennung mit Leerzeichen und klein wird kompakt gespeichert   - csqu 305438 3 -> CSQU3054383
+
+E  Verschieben ueber LOG_API
+---------------------------------------------------------
+   Knapp (DEMO samt Testfahrten): Zürich 4/8 - +6 TEU, nur bis zum Rollback
+   Testcontainer: DANU 100010 2 (Kohle)
+   [ok]     Hamburg -> Köln: Inland, kein Zoll   - 357 km, Status BEREIT
+   [ok]     Köln -> Paris: Inland -> EU, kein Zoll   - 404 km, Status BEREIT
+   [ok]     Paris -> Zürich: EU -> Drittland, Zoll   - 489 km, Status ZOLL
+   [ok]     Verschieben beim Zoll wird abgewiesen   - ORA-20021
+   [ok]     Zoll freigegeben -> BEREIT
+   [ok]     Zweite Freigabe wird abgewiesen   - ORA-20024
+   [ok]     Zürich -> Oslo: Drittland -> Drittland, andere Laender, Zoll   - 1403 km, Status ZOLL
+   [ok]     Verschieben an den eigenen Standort wird abgewiesen   - ORA-20020
+   [ok]     Unbekannter Container wird abgewiesen   - ORA-20022
+   [ok]     Unbekannter Zielort wird abgewiesen   - ORA-20023
+   [ok]     Barcelona -> Paris: EU -> EU, kein Zoll   - 830 km, Status BEREIT
+   [ok]     Historie lueckenlos: Hamburg -> Köln -> Paris -> Zürich -> Oslo   - 4 Bewegungen
+   [ok]     Historie behaelt die Zone von damals   - Paris heute DRITTLAND, in der Bewegung EU
+
+F  Sichten
+---------------------------------------------------------
+   [ok]     Jeder Container erscheint in LOG_CONTAINER_V   - 19 Container
+   [ok]     Bestand zaehlt jeden Container genau einmal
+   [ok]     TEU: 40-Fuss zaehlt doppelt
+   [ok]     Kuehlware faehrt im Reefer (xxR1), alles andere im Standardcontainer (xxG1)
+   [ok]     Typcode: 40 Fuss beginnt mit 42, 20 Fuss mit 22
+   [ok]     Jede Ware hat eine gueltige Farbe und mindestens einen Container
+   [ok]     Bewegungssicht nennt Staedte und Kilometer
+
+H  Karte - Laender, Projektion, Anwendung
+---------------------------------------------------------
+   [ok]     63 Laender, jedes mit Flaeche   - 63 mit Flaeche
+   [ok]     Alle Landesflaechen gueltig
+   [ok]     Alle Landesflaechen in SRID 8307
+   [ok]     Spatial-Index auf den Laendern benutzbar   - Status VALID
+   [ok]     Zonen: 1 Inland, 27 EU (26 Staaten + Aland), 35 Drittland
+   [ok]     EU 27 + Aland, Schengen 29 + Aland, Zollunion EU + Aland + Monaco + San Marino
+   [ok]     Jede Stadt liegt in ihrem Land (SDO_RELATE)
+   [ok]     Keine Stadt beruehrt ein fremdes Land
+   [ok]     Java-Projektion = SDO_CS.TRANSFORM nach EPSG:3035   - groesste Abweichung 0,000 m (Zürich)
+   [ok]     Anwendung liest 63 Laender ueber FDAL   - 63 Laender
+   [ok]     SDO-Leser: jeder Stuetzpunkt wie bei Oracle
+   [ok]     Flaechentreu: Java-Flaeche = SDO_AREA (Laender ueber 1000 km2)   - groesste Abweichung 0,094 % (DZ)
+   [ok]     Deutschland rund 357 000 km2 (Oracle)   - 357574 km2
+   [ok]     Karte: jede Stadt im eigenen Land, gerechnet in Java   - 10/10
+   [ok]     Karte aus der Datenbank gezeichnet, alle drei Zonen sichtbar   - db_karte.png
+
+I  Container auf der Karte
+---------------------------------------------------------
+   [ok]     Anwendung liest alle Container und Waren ueber FDAL   - 18 Container (fest: 18), 6 Waren
+   [ok]     Waren in der Reihenfolge der Legende
+   [ok]     Jeder Container steht an einer Stadt der Karte   - 0 ohne Stadt
+   [ok]     Reefer genau bei Kuehlware (aus dem Typcode)   - 0 falsch
+   [ok]     Jede Bauart einmal mit RayPhong gerendert, keines leer   - 9 Bilder fuer 18 Container
+   [ok]     Karte zeigt jeden Container genau einmal   - 18 auf der Karte, db_karte.png
+
+J  FDAL-Dauerlauf: dieselbe Verbindung, viele Abfragen
+---------------------------------------------------------
+   [ok]     16 Abfragen hintereinander ueber FDAL, ohne Fehler   - 16/16  Pool: 1 offen, 1 frei
+
+K  Drag and Drop: Regeln, Entfernung, Fangen, Schreibweg
+---------------------------------------------------------
+   Knapp (DEMO samt Testfahrten): Paris 5/10 - +6 TEU, nur bis zum Rollback
+   [ok]     Zollvorschau beim Ziehen = LOG_API.zoll_noetig, alle 90 Richtungen
+   [ok]     Kilometer beim Ziehen (Vincenty) = LOG_API.distanz_m   - groesste Abweichung 0,49 m (Berlin-London), Datenbank rundet auf ganze Meter
+   [ok]     SDO_NN findet zu jedem Punkt nahe einer Stadt genau diese   - 10/10
+   [ok]     Nordsee mit 100 km Suchradius: keine Stadt
+   [ok]     25 Zufallspunkte: SDO_NN und Java waehlen dieselbe naechste Stadt   - 25/25
+   [ok]     Suchradius 0 wird abgewiesen   - ORA-20025
+   [ok]     Schreibweg der App: Hamburg -> Koeln, Fahrt zurueckgelesen   - 357 km, Bewegung 327
+   [ok]     Abgelehnte Fahrt wird zu 'beim Zoll' uebersetzt, Meldung ohne ORA-Vorspann   - BEIM_ZOLL: Container 2 steht beim Zoll und muss erst freigegeben werden
+   [ok]     Freigabe ueber den Schreibweg der App
+   [ok]     LOG_LAND_V liefert GRENZE, die ORA-13199-Falle GRENZE_WKT ist weg
+
+L  Zonenregeln: Zoll-Liste LOG_ZOLL_V
+---------------------------------------------------------
+   Knapp (DEMO samt Testfahrten): Zürich 5/10 - +6 TEU, nur bis zum Rollback
+   [ok]     Sicht LOG_ZOLL_V vorhanden und gueltig
+   [ok]     LOG_ZOLL_V zeigt genau die Container mit Status ZOLL   - 0 beim Zoll
+   [ok]     Koeln -> Zuerich: Zeile mit Grenze DE -> CH, Zonen INLAND -> DRITTLAND   - Köln|Zürich|DE|CH|INLAND|DRITTLAND|0
+   [ok]     Wartezeit rechnet die Datenbank: nach 2,2 s mehr Sekunden   - 0 s -> 2 s
+   [ok]     App liest die Liste (SQL_ALLE + MAPPER), neuester Fall zuletzt, Farbe der Ware   - 1 Faelle, zuletzt DANU 100003 6 DE → CH, 2 s
+   [ok]     Nach der Freigabe verschwindet der Container aus der Liste
+
+M  Politur: Bestand, Historie, Demo-Dienst
+---------------------------------------------------------
+   Knapp (DEMO samt Testfahrten): Zürich 6/11 - +6 TEU, nur bis zum Rollback
+   [ok]     LOG_BESTAND_V = Bestandsliste der App (je Stadt und Ware: Anzahl, TEU, beim Zoll)   - 18 Zeilen
+   [ok]     Fahrtenliste (SQL_LETZTE + MAPPER): hoechstens 5, neueste zuerst, Namen und Zeit gefuellt   - 5 Zeilen, oben 329: DANU 100003 6 Köln -> Zürich
+   [ok]     Historie jedes Containers lueckenlos: Ziel = naechster Start, letzte Fahrt endet am Standort   - 11 Container mit Fahrten
+   [ok]     Zeitpunkte steigen mit der Bewegungsnummer   - 0 Rueckspruenge
+   [ok]     Historie (SQL_HISTORIE): eine Fahrt mehr, zuletzt die neue, aelteste zuerst   - 1 -> 2 Fahrten
+   [ok]     Demo-Dienst im Speicher rechnet wie LOG_API: Zonen, Zoll und Meter gleich   - 10 Fahrten verglichen
+
+N  Runde 2: Kapazitaet, Kosten, Auftraege
+---------------------------------------------------------
+   [ok]     Struktur Runde 2: 7 neue Spalten, LOG_TARIF mit 3 Werten, LOG_AUFTRAG, LOG_JOB gueltig   - 7 Spalten, 3 Tarife, LOG_JOB 2/2
+   [ok]     Alle 10 Staedte haben eine Kapazitaet, keine ist ueberbelegt   - München 2/12, Hamburg 0/16, Köln 1/12, Berlin 4/12, Paris 3/11, Warschau 3/10, Barcelona 0/10, Oslo 1/8, London 1/8, Zürich 8/12
+   [ok]     Belegte und freie TEU: LOG_ORT_V = LOG_API = Bestandsliste der App; Kapazitaet ueber OrtRepository   - 10 Staedte verglichen
+   Knapp (DEMO samt Testfahrten): Zürich 8/12 - +6 TEU, nur bis zum Rollback
+   [ok]     Paris mit 1 freien TEU: ein 40-Fuss-Container passt nicht   - ORA-20026
+   [ok]     Danach ist Paris voll: auch 20 Fuss wird abgewiesen, die Meldung nennt Stadt und Zahlen   - ORA-20026: Paris ist voll: 4 von 4 TEU belegt, der Container braucht 1
+   [ok]     Kosten Hamburg -> Oslo: Fracht = Java-Rechnung auf den Cent, Zoll 85 EUR, Vorschau = Fracht + Zoll   - DB 674.53 + 85, Java 674.53, Vorschau 759.53 (HOLZ, 1 TEU, 710034 m)
+   [ok]     Kostenvorschau der Karte (Vincenty statt SDO_DISTANCE) weicht hoechstens 1 Cent ab   - Karte 759.53, LOG_API 759.53
+   [ok]     Standgeld: 31 min beim Zoll = 3 angefangene Viertelstunden = 9 EUR (LOG_ZOLL_V zeigte es vorher)   - Freigabe nach 1860 s, 9 EUR, vorher 9, Java 9.00
+   [ok]     Terminfolge: der spaetere Auftrag WARTET, LOG_AUFTRAG_V zeigt Rang 1 und 2   - WARTET, Rang 1/2
+   [ok]     Erst Hamburg -> Berlin, dann Berlin -> Muenchen; Fahrten als AUFTRAG, Auftrag kennt seine Fahrt   - ERLEDIGT (Bewegung 345), ERLEDIGT (Bewegung 346)
+   [ok]     Termin in einer Stunde: NICHT_FAELLIG; storniert: Status STORNIERT mit Zeitpunkt   - NICHT_FAELLIG
+   [ok]     Stornierten Auftrag ausfuehren wird abgewiesen   - ORA-20028
+   [ok]     Unbekannten Auftrag stornieren wird abgewiesen   - ORA-20027
+   [ok]     Beim Zoll: Auftrag BLOCKIERT, bleibt OFFEN, Grund und Versuch stehen dran   - BLOCKIERT: Container 5 steht beim Zoll und muss erst freigegeben werden
+   [ok]     Nach der Freigabe faehrt derselbe Auftrag   - ERLEDIGT (Bewegung 348)
+   [ok]     Ziel voll: Auftrag BLOCKIERT mit Grund 'voll'   - BLOCKIERT: Berlin ist voll: 3 von 3 TEU belegt, der Container braucht 1
+   [ok]     Steht schon am Ziel: ERLEDIGT ohne Fahrt   - ERLEDIGT
+   [ok]     stand_marke aendert sich mit Auftraegen und Fahrten   - 20260911201343438000|344||0 -> 20260911201343491000|348|20260911201343497000|6
+   [ok]     Auftragsliste (SQL_LISTE + MAPPER): offene zuerst, dazu die abgeschlossenen   - 6 Auftraege, 0 offen
+   [ok]     Historie der App traegt Kosten und Ausloeser   - 348: DANU 100005 7 Zürich -> München, 439.84 EUR, AUFTRAG
+   [ok]     LOG_KOSTEN_V verliert keinen Cent gegenueber LOG_BEWEGUNG   - 47808.52 EUR
+   [ok]     Auffang-Job aktiv, jede Minute, letzter Lauf ohne Fehler   - FREQ=MINUTELY;INTERVAL=1, letzter Lauf: SUCCEEDED
+
+P  Karte Runde 2: Tarif, Belegung, Kosten-Reiter, Demo-Dienst
+---------------------------------------------------------
+   [ok]     Karte laedt den Tarif ueber FDAL (DbKartenQuelle): 3 Tarife und alle Frachtsaetze wie in DEMO   - EISEN 1.3, WEIZEN 1, HOLZ 0.95, KOHLE 1.1, MASCHINEN 1.45, KUEHLWARE 1.9, 
+   [ok]     Kartenmodell: Kapazitaet, belegte und freie TEU je Stadt = LOG_ORT_V (Fuellstandsring, Warnung beim Ziehen)   - 10 Staedte
+   [ok]     Kosten-Reiter (KostenRepository): Summe und Fahrten wie LOG_BEWEGUNG   - 27 Zeilen, 43 Fahrten, 47808.52 EUR
+   [ok]     Fahrt der App traegt die Kosten (Fracht + Zoll) = LOG_API.kosten_vorschau   - 1114.55 EUR
+   [ok]     Demo-Dienst mit Tarif: Kosten jeder Fahrt wie LOG_API (hoechstens 1 Cent, Vincenty statt SDO)   - 10 Fahrten, groesste Abweichung 0 EUR
+
+Q  Auftraege der App: Ausfuehren mit Fahrt, Demo-Dienst, Weg ueber FDAL
+---------------------------------------------------------
+   [ok]     Auftrag ueber den Weg der App (auftragMitFahrt): gefahren, Fahrt mit Kosten und Metern wie LOG_BEWEGUNG   - ERLEDIGT, 486.32 EUR, 255958 m
+   [ok]     Blockiert ueber den Weg der App: keine Fahrt, Grund wie ihn die Liste zeigt   - BLOCKIERT: Container 6 steht beim Zoll und muss erst freigegeben werden
+   [ok]     Dienst der Demo und LOG_API: dieselbe Auftrags-Szene, dieselben Ergebnisse   - DB [WARTET, ERLEDIGT, ERLEDIGT, NICHT_FAELLIG, BLOCKIERT, ERLEDIGT, ERLEDIGT]
+   [ok]     Weg der App ueber FDAL: planen, in der Liste sehen, Standmarke aendert sich, stornieren   - Auftrag 96, Marke 20260911195025303000|269||0 -> 20260911195025303000|269|20260911201343767000|1
+   [ok]     Danach ist der festgeschriebene Test-Auftrag wieder weg
+
+R  Zeitreise: ganze Historie, SQL-Gegenprobe, Kosten um t, Prognose
+---------------------------------------------------------
+   [ok]     App liest die ganze Historie ueber FDAL (alleBewegungen): alle Fahrten, die aelteste zuerst   - 15 von 15 Fahrten
+   [ok]     Historie endet bei jedem Container am heutigen Stand (Ort und Zollstatus), ohne Luecke   - 15 Fahrten
+   [ok]     Jede erledigte Zollfahrt kennt ihre Freigabe (freigegeben_am) - nur die Wartenden nicht   - 0 ohne Freigabezeit, 4 Zollfahrten
+   [ok]     SQL-Gegenprobe: Stand um t (Ort, Zoll) je Container = Java-Rekonstruktion der Zeitleiste   - 18 Zeitpunkte, 324 Vergleiche
+   [ok]     Kosten um t (Kosten-Reiter auf der Zeitreise) = SQL-Summe bis t, Standgeld erst ab Freigabe   - 11.09. 17:09:23: Java 8748.25, SQL 8748.25 EUR
+   [ok]     Prognose aus LOG_AUFTRAG: nach 5 min noch da, nach 15 min am ersten, nach 25 min am zweiten Ziel   - Auftraege 97, 98: Orte 2 -> 4 -> 3
+
+G  Wiederholbarkeit
+---------------------------------------------------------
+   [ok]     Nach dem Rollback: gleich viele Bewegungen (ohne Fahrten des Jobs)   - 15 Bewegungen
+   [ok]     Nach dem Rollback: gleich viele Container   - 18 Container
+   [ok]     Nach dem Rollback: jeder Container an seinem Platz, gleicher Status   - Standortliste verglichen
+
+O  Nebenlaeufigkeit: zwei eigene Sitzungen, nichts wird gespeichert
+---------------------------------------------------------
+   [ok]     Zweite Fahrt in dieselbe Stadt wartet, bis die erste fertig ist (Sperre auf LOG_ORT)   - wartete, danach gefahren nach 1506 ms
+   [ok]     Auftrag, den eine andere Sitzung haelt: sofort GESPERRT, ohne zu warten   - GESPERRT nach 1 ms
+   [ok]     Danach kein Test-Auftrag uebrig
+
+S  Demo mit dem echten Stand: alle Schritte, nichts gespeichert
+---------------------------------------------------------
+   [ok]     Demo mit dem Stand aus DEMO: alle 16 Schritte, Fahrten im Speicher, Auftrag gefahren, Zeitreise   - 16/16 in 24 s, 8 Fahrten, Auftrag true, Plan true, Zeitreise true/true
+   [ok]     Nach der Demo: DEMO unberuehrt - gleich viele Bewegungen und Auftraege, jeder Container am Platz   - 15 Bewegungen, 0 Auftraege
+
+=========================================================
+Ergebnis: 147/147 gruen

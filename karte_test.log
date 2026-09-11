@@ -1,0 +1,158 @@
+Logistik_App - Karte ohne Datenbank
+
+Projektion ETRS89-LAEA
+   [ok]     EPSG-Beispiel 50N 5O -> 3962799,45 / 2999718,85   - 3962799,451 / 2999718,853
+   [ok]     Mittelpunkt 52N 10O liegt auf dem falschen Ursprung
+   [ok]     Hin und zurueck ueber ganz Europa, besser als 1 cm   - groesster Fehler 1,18e-08 Grad = 1,3 mm
+   [ok]     Flaechentreu: 1x1-Grad-Feld bei 50N rund 7 900 km2   - 7891,8 km2
+
+Laenderdaten aus db/07_grenzen.tsv
+   [ok]     63 Laender gelesen   - 63 Laender
+   [ok]     WKT-Leser zaehlt jeden Stuetzpunkt   - 0 Abweichungen
+   [ok]     SDO-Leser (ELEM_INFO/ORDINATES) ergibt dieselben Flaechen   - 0 Abweichungen
+   [ok]     SDO-Leser weist zusammengesetzte Ringe ab statt sie halb zu lesen
+   [ok]     Jedes Land hat eine Zone   - {DRITTLAND=35, EU=27, INLAND=1}
+   [ok]     Deutschland rund 357 000 km2   - 357574 km2
+   [ok]     Jede Stadt liegt in ihrem eigenen Land (projiziert)   - 10/10
+
+Ansicht
+   [ok]     Zoomen haelt den Punkt unter der Maus fest   - 0,00e+00 m
+   [ok]     Welt -> Bild -> Welt
+   [ok]     Norden ist oben
+   [ok]     Zoom bleibt begrenzt
+
+Container (RayPhong)
+   [ok]     20-Fuss-Mesh gebaut: Wand, Rahmen, Stahl   - 544 Dreiecke, Reefer mit Aggregat
+   [ok]     Grund bleibt durchsichtig   - Alpha oben links 0
+   [ok]     40 Fuss ist doppelt so lang wie 20 Fuss (ISO 668)   - Verhaeltnis 1,97, soll 12,192/6,058 = 2,01 (plus Rahmen)
+   [ok]     Dach traegt die Warenfarbe (Rot vor Gruen vor Blau wie Eisen)   - 132,58,36
+   [ok]     Reefer hat sein Kuehlaggregat an der Stirnseite   - 313 Bildpunkte anders
+   [ok]     Drehstufen: -22,5 -> 15, 360 -> 0, 191 -> 8
+   [ok]     Cache rendert jedes Bild nur einmal
+   [ok]     Stellplatz: keine Reihe ueber 3 TEU, keiner geht verloren   - 4 Container in 2 Reihen
+   Bild: container_vorschau.png
+
+Probebild
+   [ok]     Jeder Container steht genau einmal auf der Karte   - 18 von 18
+   [ok]     Stellplaetze liegen unter ihrer Stadt, ohne Ueberlappung in der Reihe
+   [ok]     Maus ueber einem Container nennt seine Kennung   - DANU 100001 5 · 42G1 · Weizen · 40 Fuß · Hamburg · bereit
+   [ok]     Scharfes Neuzeichnen nach dem Ruhen   - 43 ms (nur nach Ziehen/Zoomen)
+   [ok]     Stillstand und Hover fluessig   - 4 ms je Bild
+   [ok]     Ziehen fluessig (Ebenenbild wird nur versetzt)   - 6 ms je Bild
+   [ok]     Alle drei Zonen sind als Flaeche zu sehen   - 4701 Farben im Raster
+   [ok]     Hamburgs Marke sitzt an der berechneten Stelle   - Bildpunkt (691,350) = 69,183,193
+   Bild: karte_vorschau.png
+
+Entfernung und Richtung
+   [ok]     Vincenty: Flinders Peak - Buninyong = 54 972,271 m   - 54972,271 m
+   [ok]     Grosskreis beginnt und endet an den Staedten   - 17 Punkte
+   [ok]     Container faehrt nach Osten: Tueren nach Westen (180 Grad)
+   [ok]     Container faehrt nach Norden: 270 Grad
+   [ok]     Schraeg auf dem Bild ist steiler im Raum (Blick unter 52 Grad)   - 45 Grad auf dem Bild = 51,8 Grad im Raum
+
+Drag and Drop (ohne Datenbank, Dienst im Speicher)
+   Bild: ziehen_vorschau.png (waehrend des Ziehens)
+   [ok]     Hamburg -> Paris: Container steht danach in Paris   - Paris, BEREIT
+   [ok]     Meldung nennt Strecke, Kilometer und Zonen   - DANU 100002 0  Hamburg → Paris  ·  746 km  ·  Inland → EU-Ausland  ·  970,08 €
+   [ok]     In die Nordsee losgelassen: federt zurueck, kein Auftrag   - RUECK
+   [ok]     Esc waehrend des Ziehens: zurueck an den Platz   - RUECK
+   [ok]     Koeln -> Oslo: Container steht beim Zoll   - ZOLL / DANU 100010 2  Köln → Oslo  ·  1027 km  ·  Inland → Nicht-EU  ·  1.215,09 €  ·  beim Zoll
+   [ok]     Container beim Zoll laesst sich nicht aufnehmen   - DANU 100010 2 steht beim Zoll — Rechtsklick: freigeben
+   [ok]     Freigabe ueber das Kontextmenue: wieder bereit   - DANU 100010 2 vom Zoll freigegeben
+   [ok]     Auftrag scheitert: Container bleibt in Berlin, Meldung sichtbar   - Datenbank: ORA-03113 (gespielt)
+   [ok]     Nach allem: alle Container da, keiner doppelt   - 18
+
+Zonenregeln: Grenzen, Zoll-Liste, Freigabe
+   [ok]     Hamburg -> Paris: eine Marke, DE verlassen, Zonenwechsel ohne Zoll   - DE→NL Zone @0.47
+   [ok]     Koeln -> Oslo: letzte Marke ist die Zollgrenze nach NO   - DE→DK Zone @0.46, DK→NO Zoll Zone @0.97
+   [ok]     Paris -> Barcelona: innerhalb der EU keine Marke   - keine
+   [ok]     Muenchen -> Zuerich: Zollgrenze nach CH   - DE→CH Zoll Zone @0.72
+   [ok]     Marken liegen auf der Strecke, in Fahrtrichtung   - 
+   [ok]     Zollmarke sitzt auf der Grenzlinie (2 km davor noch nicht CH)   - 9.3917 / 47.6003
+   [ok]     Fahrt Muenchen -> Zuerich: Grenze CH hat aufgeleuchtet   - [CH], ZOLL
+   [ok]     Zoll-Liste: zwei Faelle, der aeltere zuerst   - 2
+   [ok]     Fall Koeln -> Oslo: Grenze DE → NO, Zonen INLAND -> DRITTLAND   - DE → NO INLAND->DRITTLAND
+   [ok]     Wartezeit zaehlt mit der eigenen Uhr weiter   - 
+   [ok]     Tafel waechst mit der Liste   - 244 px
+   [ok]     Zeile anklicken: Karte zoomt auf Oslo   - Oslo bei 700/407
+   Bild: zoll_vorschau.png
+   [ok]     Knopf 'Freigeben': Muenchen/Zuerich frei, Oslo wartet noch   - 1 / DANU 100007 8 vom Zoll freigegeben
+   [ok]     'Alle freigeben': Liste leer, alle Container bereit   - 0 / DANU 100010 2 vom Zoll freigegeben
+   [ok]     Leere Tafel: Klicks loesen nichts aus   - 
+
+Politur: Bestand, Historie, Demo
+   [ok]     Bestand: alle 10 Staedte, 18 Container, TEU stimmen   - 10 Staedte, 18 Container, 22 TEU
+   [ok]     Bestand nach Zone geordnet, Anteile summieren sich zur Stadt   - Berlin
+   [ok]     Bestandsliste: Klick auf Oslo holt Oslo in die Bildmitte   - Zeile y=641, Oslo bei 700/407
+   [ok]     Nach Koeln -> Oslo: Bestand Oslo zaehlt ihn beim Zoll, Reiter zeigt 1   - 2 in Oslo, 1 beim Zoll
+   [ok]     Fahrtenliste: die Fahrt steht oben   - 1 Fahrten
+   [ok]     Historie: Spur Koeln -> Oslo -> London, lueckenlos, aelteste zuerst   - [1: DANU 100010 2 Köln -> Oslo, 2: DANU 100010 2 Oslo -> London]
+   [ok]     Historie oeffnet den Reiter Fahrten mit derselben Nummerierung   - Reiter 2, Historie true, Liste [1: DANU 100010 2 Köln -> Oslo, 2: DANU 100010 2 Oslo -> London]
+   Bild: historie_vorschau.png
+   [ok]     Klick auf Fahrt 1 der Historie: Spur bleibt ganz, Karte zeigt Oslo   - [1: DANU 100010 2 Köln -> Oslo, 2: DANU 100010 2 Oslo -> London] / true [1: DANU 100010 2 Köln -> Oslo, 2: DANU 100010 2 Oslo -> London]
+   [ok]     'alle Fahrten': zurueck zur Liste, Spur weg   - 2
+   [ok]     Klick auf eine Fahrt der Liste: genau diese als Spur   - [2: DANU 100010 2 Oslo -> London]
+   [ok]     Esc blendet die Spur aus, die Liste verlaesst die Historie   - 
+   [ok]     Reiter umschalten   - 
+   Bild: demo_vorschau.png
+   [ok]     Demo: wer vorher beim Zoll stand, steht auch in der Zoll-Liste der Demo   - 1 in der Liste
+   Bild: demo_zeitreise.png
+   [ok]     Demo lief durch: 7 Fahrten + 1 Auftrag (+1 uebernommener Zollfall), Historie mit 3 Fahrten als Spur   - 8 Fahrten im Spiel, 9 Bewegungen
+   [ok]     Demo Runde 2: alle 16 Schritte, Auftrag mit Countdown geplant und von der Karte gefahren, zum Schluss Zeitreise mit fahrenden Containern   - 16/16, Plan true, Auftrag true, Zeitreise true/true
+   [ok]     Nach der Demo: Zeitleiste frei, live, Zeitraffer wieder x60   - gesperrt false, Tempo 60
+   [ok]     Nach der Demo: echter Dienst unberuehrt, Stand wie vorher, Band weg   - Demo vorbei — wieder der gespeicherte Stand
+   [ok]     Waehrend der Demo zeigten die Listen den Spielstand, danach wieder den echten   - 2 Fahrten, 1 Zoll
+   [ok]     Demo abbrechen: endet nach dem laufenden Schritt, Stand wie vorher   - 1 Fahrten, Demo abgebrochen — wieder der gespeicherte Stand
+   [ok]     Echter Dienst hat vom Ganzen nichts gemerkt   - 2 Aufrufe
+
+Kapazitaet und Kosten (Runde 2, Zahlen aus 10_daten2.sql)
+   [ok]     Aus 10_daten2.sql gelesen: 10 Kapazitaeten (Hamburg 16), 6 Frachtsaetze, 3 Tarife   - 10 Kapazitaeten, Hamburg 16
+   [ok]     Java-Tarif trifft den Betrag aus LOG_API: 710 034 m Kohle = 781,04 EUR, mit Zoll 866,04 EUR   - 781.04 / 866.04
+   [ok]     Kartenmodell: Hamburg belegt 5 von 16 TEU, frei 11   - 5 / frei 11
+   Bild: voll_vorschau.png (waehrend des Ziehens)
+   [ok]     Paris voll: der Container federt zurueck, kein Auftrag, Meldung nennt die Stadt   - RUECK / Paris ist voll: 0 TEU frei, der Container braucht 1
+   [ok]     Dienst im Speicher weist ebenfalls ab (ZIEL_VOLL, Text wie LOG_API)   - Paris ist voll: 1 von 1 TEU belegt, der Container braucht 1
+   [ok]     Hamburg -> Oslo: Meldung nennt die Kosten (Fracht + Zoll)   - DANU 100003 6  Hamburg → Oslo  ·  710 km  ·  Inland → Nicht-EU  ·  866,04 €  ·  beim Zoll
+   [ok]     Zoll-Liste: Standgeld laeuft (erste Viertelstunde 3 EUR)   - 3.00 EUR
+   [ok]     Freigabe schreibt Standgeld an die Fahrt; die Fahrtenliste traegt Kosten   - 869.04 EUR
+   [ok]     Kosten-Reiter: Summe = alle Fahrten, Zoll 85 EUR, Standgeld 3 EUR, zwei Zonenpaare   - 1600.65 EUR, 2 Zonenpaare
+   [ok]     Umschalten auf 'Heute': alles von heute, gleiche Summe   - 1600.65
+   [ok]     Bestand kennt die Kapazitaet, Reiter Kosten laesst sich waehlen   - 
+   Bild: kosten_vorschau.png
+
+Auftraege (Runde 2): Regeln wie LOG_API, Planer, Lauf, Blockade, Abfrage
+   [ok]     Dienst im Speicher folgt LOG_API: WARTET, ERLEDIGT, ERLEDIGT, NICHT_FAELLIG, storniert = nicht offen   - WARTET, ERLEDIGT, ERLEDIGT, NICHT_FAELLIG, AUFTRAG_NICHT_OFFEN
+   [ok]     ... beim Zoll BLOCKIERT mit Grund, nach Freigabe ERLEDIGT; schon am Ziel: ERLEDIGT ohne Fahrt   - BLOCKIERT: Container 2 steht beim Zoll und muss erst freigegeben werden / ERLEDIGT / ERLEDIGT: stand schon am Ziel - ohne Fahrt
+   [ok]     Shift + Ziehen: Container federt zurueck, Planer oeffnet mit Ziel Berlin, noch keine Fahrt   - RUECK, [3->4 | 256 km  ·  ≈ 281,55 €  ·  zollfrei  ·  frei 10 TEU  ·  fällig um 22:47]
+   [ok]     Planer-Vorschau nennt Strecke, Kosten und Platz   - 3->4 | 256 km  ·  ≈ 281,55 €  ·  zollfrei  ·  frei 10 TEU  ·  fällig um 22:47
+   [ok]     Auftrag steht in der Liste, im Reiter und als Vorschau auf der Karte   - 1 offen, 1 Strecken, Auftrag #1 geplant: DANU 100003 6 → Berlin, sofort
+   Bild: auftraege_vorschau.png
+   [ok]     Faelliger Auftrag: die Karte faehrt ihn mit Animation, als AUFTRAG, Meldung 'Auftrag · ...'   - FAHRT, Auftrag  ·  DANU 100003 6  Hamburg → Berlin  ·  256 km  ·  Inland → Inland  ·  281,55 €
+   [ok]     Danach: ein offener (Weizen, in 5 min), einer abgeschlossen mit Fahrt   - 1 offen, 1 fertig
+   [ok]     Beim Zoll: keine Animation, still versucht - BLOCKIERT, Grund und Versuch in der Liste   - Container 3 steht beim Zoll und muss erst freigegeben werden
+   [ok]     Sofort danach kein neuer Versuch (Wiederholzeit)   - 1 Versuche
+   [ok]     Nach Freigabe und Wiederholzeit faehrt die Karte ihn   - Auftrag 3: DANU 100003 6 -> München (ERLEDIGT)
+   [ok]     Stornieren-Knopf: Auftrag STORNIERT, Karte zeigt keine Vorschau mehr   - Auftrag 2: DANU 100001 5 -> Oslo (STORNIERT)
+   [ok]     Standmarke: eine fremde Fahrt wird bei der naechsten Abfrage sichtbar   - vorher 2, jetzt 4
+
+Zeitreise (Runde 2): Stand von damals, Prognose, Zeitleiste, Nur-Ansicht
+   [ok]     Historie endet ueberall am heutigen Stand; rekonstruiert um jetzt = heutiger Stand   - 5 Fahrten
+   [ok]     Vor der ersten Fahrt: genau der Anfangsstand
+   [ok]     Zwischendurch: Paris nach 15 min, Oslo beim Zoll nach 25 min, frei nach 40 min, Zuerich beim Zoll   - Paris, Oslo/ZOLL, BEREIT, Zürich/ZOLL
+   [ok]     Kosten um t: nur Fahrten bis t, Standgeld erst ab der Freigabe (15 min = 1 Viertelstunde)   - 1855.15 EUR -> 1858.15 EUR, Standgeld 3.00
+   [ok]     Zoll-Liste um t: wer damals wartete, seit wann (5 min), Grenze DE -> NO; danach leer   - 1 Fall, 300 s DE → NO
+   [ok]     Prognose: in 15 min steht a in Berlin (Auftrag #1), vorher ist er noch offen   - Berlin
+   [ok]     Wiedergabe: 0,3 s nach der Abfahrt ist a zwischen Koeln und Paris, bei 30 %   - 1 unterwegs
+   [ok]     Achse gestaucht: 2 h 25 ohne Ereignis = schmaler Bruch, 10 min mit Fahrten breit; hin und zurueck genau   - 2 Brueche, 2 h 25: 26 px, 10 min: 153 px, Abweichung 0,00 px
+   [ok]     Schritte: vor springt kurz hinter die naechste Fahrt, zurueck auf die vorige   - 600 s, 0 s
+   [ok]     Abspielen: von vorn im Zeitraffer, Leerlauf uebersprungen, endet am Ende der Prognose   - 569 Takte (22 s), 192 mit Fahrt, Ende Prognose
+   [ok]     Leitstand: Zeitleiste geladen, Karte zeigt 25 min nach Beginn - b in Oslo beim Zoll, Band 'ZEITREISE'   - 5 Fahrten, Oslo/ZOLL
+   [ok]     Seitenleiste zeigt den Stand von damals: Zoll-Liste 1 Fall ohne Knoepfe, 3 Fahrten, Bestand Oslo   - 1 Zoll, 3 Fahrten
+   [ok]     Nur Ansicht: Ziehen startet nicht, kein Aufruf an den Dienst, Auftragslauf ruht   - RUHE, Aufrufe 5
+   Bild: zeitreise_vorschau.png
+   Bild: prognose_vorschau.png
+   [ok]     Bilder: eine Fahrt mitten im Zeitraffer, dann die Prognose - a in Berlin   - 1 unterwegs, a in Berlin
+   [ok]     Randfaelle: Stornieren waehrend der Reise abgewiesen (Auftrag bleibt), Esc = zurueck zu jetzt   - 1 offen, Zeitreise: nur Ansicht — mit „Jetzt“ zurück, dann stornieren, Zeitreise false
+   [ok]     Jetzt: Karte wieder live, Zoll-Liste mit Knoepfen wie vorher, alle 5 Fahrten   - 1 Zoll, 5 Fahrten
+
+Ergebnis: 119/119 gruen

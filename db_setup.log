@@ -1,0 +1,232 @@
+Logistik_App - Datenbank-Einrichtung
+Zeit        : 11.09.2026 15:05:24
+Verzeichnis : C:\Users\Dan40810\Documents\NetBeansProjects\Logistik_App
+URL         : jdbc:oracle:thin:@//localhost:1521/PDBORCL   Benutzer: DEMO
+
+Verbunden in 537 ms
+Datenbank   : Oracle Database 21c Enterprise Edition Release 21.0.0.0.0 - Production
+Version 21.3.0.0.0
+
+---------------------------------------------------------
+Skript: 00_drop.sql
+---------------------------------------------------------
+  BEGIN DBMS_SCHEDULER.DROP_JOB(job_name => 'LOG_AUFTRAG_JOB', force => TRUE); EXCEPTION WHE ...   ok
+  BEGIN FOR o IN (SELECT object_name, object_type FROM user_objects WHERE object_type IN ('P ...   ok
+  BEGIN FOR t IN (SELECT table_name FROM user_tables WHERE table_name IN ('LOG_AUFTRAG', 'LO ...   ok
+  BEGIN DELETE FROM user_sdo_geom_metadata WHERE table_name IN ('LOG_ORT', 'LOG_LAND'); COMM ...   ok
+  BEGIN FOR q IN (SELECT sequence_name FROM user_sequences WHERE sequence_name IN ('LOG_ORT_ ...   ok
+
+---------------------------------------------------------
+Skript: 01_tabellen.sql
+---------------------------------------------------------
+  CREATE TABLE log_land ( iso2 CHAR(2) NOT NULL, name VARCHAR2(60) NOT NULL, inland CHAR(1)  ...   ok
+  CREATE UNIQUE INDEX log_land_inland_ux ON log_land (CASE WHEN inland = 'J' THEN 'J' END)   ok
+  COMMENT ON TABLE log_land IS 'Laender. Die Zone jeder Stadt wird hier abgeleitet, nie an d ...   ok
+  COMMENT ON COLUMN log_land.zone_typ IS 'Virtuell: INLAND, EU oder DRITTLAND'   ok
+  COMMENT ON COLUMN log_land.zollunion IS 'J = in der EU-Zollunion. Entscheidet ueber den Zo ...   ok
+  COMMENT ON COLUMN log_land.grenze IS 'Landesflaeche, SRID 8307. Wird erst in Phase 2 (Kart ...   ok
+  CREATE SEQUENCE log_ort_seq START WITH 1 INCREMENT BY 1 NOCACHE   ok
+  CREATE TABLE log_ort ( ort_id NUMBER, name VARCHAR2(60) NOT NULL, iso2 CHAR(2) NOT NULL, l ...   ok
+  CREATE OR REPLACE TRIGGER log_ort_bi BEFORE INSERT ON log_ort FOR EACH ROW WHEN (new.ort_i ...   ok
+  CREATE INDEX log_ort_land_ix ON log_ort (iso2)   ok
+  COMMENT ON TABLE log_ort IS 'Staedte, zwischen denen Container verschoben werden'   ok
+  COMMENT ON COLUMN log_ort.lage IS 'Punkt (Laenge, Breite) in WGS84, SRID 8307'   ok
+  CREATE SEQUENCE log_ware_seq START WITH 1 INCREMENT BY 1 NOCACHE   ok
+  CREATE TABLE log_ware ( ware_id NUMBER, code VARCHAR2(20) NOT NULL, name VARCHAR2(40) NOT  ...   ok
+  CREATE OR REPLACE TRIGGER log_ware_bi BEFORE INSERT ON log_ware FOR EACH ROW WHEN (new.war ...   ok
+  COMMENT ON TABLE log_ware IS 'Warenarten. Die Farbe ist die Containerfarbe auf der Karte'   ok
+  COMMENT ON COLUMN log_ware.kuehlpflichtig IS 'J = faehrt im Kuehlcontainer (Reefer, ISO-Ty ...   ok
+  CREATE SEQUENCE log_container_seq START WITH 1 INCREMENT BY 1 NOCACHE   ok
+  CREATE TABLE log_container ( container_id NUMBER, kennung VARCHAR2(20) NOT NULL, groesse_f ...   ok
+  CREATE INDEX log_container_ort_ix ON log_container (ort_id)   ok
+  CREATE INDEX log_container_ware_ix ON log_container (ware_id)   ok
+  COMMENT ON TABLE log_container IS 'Container auf der Karte. Standort = ort_id'   ok
+  COMMENT ON COLUMN log_container.kennung IS 'ISO 6346 ohne Leerzeichen: Eigentuemer(3) + Ka ...   ok
+  COMMENT ON COLUMN log_container.status IS 'BEREIT = frei verschiebbar, ZOLL = wartet nach  ...   ok
+  CREATE SEQUENCE log_bewegung_seq START WITH 1 INCREMENT BY 1 NOCACHE   ok
+  CREATE TABLE log_bewegung ( bewegung_id NUMBER, container_id NUMBER NOT NULL, von_ort_id N ...   ok
+  CREATE OR REPLACE TRIGGER log_bewegung_bi BEFORE INSERT ON log_bewegung FOR EACH ROW WHEN  ...   ok
+  CREATE INDEX log_bewegung_cont_ix ON log_bewegung (container_id, zeitpunkt)   ok
+  COMMENT ON TABLE log_bewegung IS 'Jede Verschiebung eines Containers, in der Reihenfolge d ...   ok
+  COMMENT ON COLUMN log_bewegung.distanz_m IS 'Luftlinie in Metern, geodaetisch auf WGS84'   ok
+  INSERT INTO user_sdo_geom_metadata (table_name, column_name, diminfo, srid) VALUES ('LOG_O ...   (1 Zeilen)
+  INSERT INTO user_sdo_geom_metadata (table_name, column_name, diminfo, srid) VALUES ('LOG_L ...   (1 Zeilen)
+  COMMIT   ok
+  BEGIN EXECUTE IMMEDIATE 'CREATE INDEX log_ort_sx ON log_ort (lage) ' || 'INDEXTYPE IS MDSY ...   ok
+
+---------------------------------------------------------
+Skript: 09_runde2.sql
+---------------------------------------------------------
+  DECLARE PROCEDURE spalte(p_tabelle VARCHAR2, p_spalte VARCHAR2, p_def VARCHAR2) IS v_n NUM ...   ok
+  CREATE OR REPLACE TRIGGER log_auftrag_bi BEFORE INSERT ON log_auftrag FOR EACH ROW WHEN (n ...   ok
+  COMMENT ON COLUMN log_ort.kapazitaet_teu IS 'Stellplatz in TEU. Leer = unbegrenzt. Contain ...   ok
+  COMMENT ON COLUMN log_ware.fracht_eur_teu_km IS 'Frachtsatz in EUR je TEU und Kilometer Lu ...   ok
+  COMMENT ON COLUMN log_bewegung.fracht_eur IS 'Schnappschuss bei der Fahrt: km * TEU * Frac ...   ok
+  COMMENT ON COLUMN log_bewegung.zoll_eur IS 'Schnappschuss bei der Fahrt: Zollpauschale bei ...   ok
+  COMMENT ON COLUMN log_bewegung.standgeld_eur IS 'Bei der Freigabe: je angefangene Viertels ...   ok
+  COMMENT ON COLUMN log_bewegung.freigegeben_am IS 'Zeitpunkt der Zollfreigabe. Nur bei Zoll ...   ok
+  COMMENT ON COLUMN log_bewegung.ausgeloest IS 'HAND = in der Karte gezogen, AUFTRAG = Auftr ...   ok
+  COMMENT ON TABLE log_tarif IS 'Stellschrauben fuer Kosten und Auftraege. Aenderungen wirke ...   ok
+  COMMENT ON TABLE log_auftrag IS 'Geplante Fahrten. Je Container gilt die Terminfolge: nur  ...   ok
+  COMMENT ON COLUMN log_auftrag.grund IS 'Warum ein offener Auftrag nicht fahren konnte (Zol ...   ok
+
+---------------------------------------------------------
+Skript: 02_api.sql
+---------------------------------------------------------
+  CREATE OR REPLACE PACKAGE log_api AS -- Eigentuemer (3 Buchstaben) plus Kategorie U (Frach ...   ok
+  CREATE OR REPLACE PACKAGE BODY log_api AS -- --------------------------------------------- ...   ok
+
+---------------------------------------------------------
+Skript: 03_regeln.sql
+---------------------------------------------------------
+  CREATE OR REPLACE TRIGGER log_container_biu BEFORE INSERT OR UPDATE OF kennung ON log_cont ...   ok
+
+---------------------------------------------------------
+Skript: 04_sichten.sql
+---------------------------------------------------------
+  CREATE OR REPLACE VIEW log_ort_v AS SELECT o.ort_id, o.name, o.iso2, l.name AS land, l.zon ...   ok
+  CREATE OR REPLACE VIEW log_container_v AS SELECT c.container_id, c.kennung, log_api.kennun ...   ok
+  CREATE OR REPLACE VIEW log_bestand_v AS SELECT c.ort_id, c.ort, c.zone_typ, c.ware_code, c ...   ok
+  CREATE OR REPLACE VIEW log_bewegung_v AS SELECT b.bewegung_id, b.container_id, log_api.ken ...   ok
+  CREATE OR REPLACE VIEW log_zoll_v AS SELECT c.container_id, log_api.kennung_anzeige(c.kenn ...   ok
+  CREATE OR REPLACE VIEW log_auftrag_v AS SELECT a.auftrag_id, a.container_id, log_api.kennu ...   ok
+  CREATE OR REPLACE VIEW log_kosten_v AS SELECT TRUNC(b.zeitpunkt) AS tag, b.von_zone, b.nac ...   ok
+
+---------------------------------------------------------
+Skript: 05_daten.sql
+---------------------------------------------------------
+  INSERT INTO log_land (iso2, name, inland, eu_mitglied, zollunion, schengen) VALUES ('DE',  ...   (1 Zeilen)
+  INSERT INTO log_land (iso2, name, inland, eu_mitglied, zollunion, schengen) VALUES ('FR',  ...   (1 Zeilen)
+  INSERT INTO log_land (iso2, name, inland, eu_mitglied, zollunion, schengen) VALUES ('PL',  ...   (1 Zeilen)
+  INSERT INTO log_land (iso2, name, inland, eu_mitglied, zollunion, schengen) VALUES ('ES',  ...   (1 Zeilen)
+  INSERT INTO log_land (iso2, name, inland, eu_mitglied, zollunion, schengen) VALUES ('NO',  ...   (1 Zeilen)
+  INSERT INTO log_land (iso2, name, inland, eu_mitglied, zollunion, schengen) VALUES ('GB',  ...   (1 Zeilen)
+  INSERT INTO log_land (iso2, name, inland, eu_mitglied, zollunion, schengen) VALUES ('CH',  ...   (1 Zeilen)
+  INSERT INTO log_ort (name, iso2, lage) VALUES ('München', 'DE', SDO_GEOMETRY(2001, 8307, S ...   (1 Zeilen)
+  INSERT INTO log_ort (name, iso2, lage) VALUES ('Hamburg', 'DE', SDO_GEOMETRY(2001, 8307, S ...   (1 Zeilen)
+  INSERT INTO log_ort (name, iso2, lage) VALUES ('Köln', 'DE', SDO_GEOMETRY(2001, 8307, SDO_ ...   (1 Zeilen)
+  INSERT INTO log_ort (name, iso2, lage) VALUES ('Berlin', 'DE', SDO_GEOMETRY(2001, 8307, SD ...   (1 Zeilen)
+  INSERT INTO log_ort (name, iso2, lage) VALUES ('Paris', 'FR', SDO_GEOMETRY(2001, 8307, SDO ...   (1 Zeilen)
+  INSERT INTO log_ort (name, iso2, lage) VALUES ('Warschau', 'PL', SDO_GEOMETRY(2001, 8307,  ...   (1 Zeilen)
+  INSERT INTO log_ort (name, iso2, lage) VALUES ('Barcelona', 'ES', SDO_GEOMETRY(2001, 8307, ...   (1 Zeilen)
+  INSERT INTO log_ort (name, iso2, lage) VALUES ('Oslo', 'NO', SDO_GEOMETRY(2001, 8307, SDO_ ...   (1 Zeilen)
+  INSERT INTO log_ort (name, iso2, lage) VALUES ('London', 'GB', SDO_GEOMETRY(2001, 8307, SD ...   (1 Zeilen)
+  INSERT INTO log_ort (name, iso2, lage) VALUES ('Zürich', 'CH', SDO_GEOMETRY(2001, 8307, SD ...   (1 Zeilen)
+  INSERT INTO log_ware (code, name, farbe_hex, kuehlpflichtig, sortierung) VALUES ('EISEN',  ...   (1 Zeilen)
+  INSERT INTO log_ware (code, name, farbe_hex, kuehlpflichtig, sortierung) VALUES ('WEIZEN', ...   (1 Zeilen)
+  INSERT INTO log_ware (code, name, farbe_hex, kuehlpflichtig, sortierung) VALUES ('HOLZ', ' ...   (1 Zeilen)
+  INSERT INTO log_ware (code, name, farbe_hex, kuehlpflichtig, sortierung) VALUES ('KOHLE',  ...   (1 Zeilen)
+  INSERT INTO log_ware (code, name, farbe_hex, kuehlpflichtig, sortierung) VALUES ('MASCHINE ...   (1 Zeilen)
+  INSERT INTO log_ware (code, name, farbe_hex, kuehlpflichtig, sortierung) VALUES ('KUEHLWAR ...   (1 Zeilen)
+  COMMIT   ok
+  DECLARE PROCEDURE neu(p_ort VARCHAR2, p_ware VARCHAR2, p_fuss NUMBER) IS BEGIN INSERT INTO ...   ok
+  DECLARE v_bew NUMBER; v_holz NUMBER; FUNCTION cont(p_ort VARCHAR2, p_ware VARCHAR2) RETURN ...   ok
+  SELECT zone_typ, COUNT(*) AS staedte FROM log_ort_v GROUP BY zone_typ ORDER BY zone_typ
+     ZONE_TYP             STAEDTE              
+     -------------------- -------------------- 
+     DRITTLAND            3                    
+     EU                   3                    
+     INLAND               4                    
+  SELECT kennung_anzeige, typ_code, ware, ort, status FROM log_container_v ORDER BY containe ...
+     KENNUNG_ANZEIGE      TYP_CODE             WARE                 ORT                  STATUS               
+     -------------------- -------------------- -------------------- -------------------- -------------------- 
+     DANU 100001 5        42G1                 Weizen               Hamburg              BEREIT               
+     DANU 100002 0        22G1                 Eisen                Hamburg              BEREIT               
+     DANU 100003 6        22G1                 Kohle                Hamburg              BEREIT               
+     DANU 100004 1        22G1                 Holz                 Hamburg              BEREIT               
+     DANU 100005 7        22G1                 Maschinen            Berlin               BEREIT               
+     DANU 100006 2        22R1                 Kühlware             Berlin               BEREIT               
+     DANU 100007 8        42G1                 Maschinen            München              BEREIT               
+     DANU 100008 3        22R1                 Kühlware             München              BEREIT               
+     DANU 100009 9        22G1                 Eisen                Paris                BEREIT               
+     DANU 100010 2        22G1                 Kohle                Köln                 BEREIT               
+     DANU 100011 8        22G1                 Weizen               Paris                BEREIT               
+     DANU 100012 3        42G1                 Weizen               Berlin               BEREIT               
+     DANU 100013 9        22G1                 Kohle                Warschau             BEREIT               
+     DANU 100014 4        22R1                 Kühlware             Barcelona            BEREIT               
+     DANU 100015 0        42G1                 Holz                 Hamburg              BEREIT               
+     DANU 100016 5        22G1                 Maschinen            London               BEREIT               
+     DANU 100017 0        22R1                 Kühlware             Zürich               BEREIT               
+     DANU 100018 6        22G1                 Maschinen            Zürich               BEREIT               
+  SELECT von_ort, nach_ort, von_zone, nach_zone, zoll, distanz_km FROM log_bewegung_v ORDER  ...
+     VON_ORT              NACH_ORT             VON_ZONE             NACH_ZONE            ZOLL                 DISTANZ_KM           
+     -------------------- -------------------- -------------------- -------------------- -------------------- -------------------- 
+     Warschau             Berlin               EU                   INLAND               N                    518.8                
+     Köln                 Paris                INLAND               EU                   N                    403.8                
+     Oslo                 Hamburg              DRITTLAND            INLAND               J                    710                  
+
+---------------------------------------------------------
+Skript: 06_laender.sql
+---------------------------------------------------------
+  DECLARE PROCEDURE land(p_iso VARCHAR2, p_name VARCHAR2, p_eu VARCHAR2, p_zu VARCHAR2, p_sc ...   ok
+  SELECT zone_typ, COUNT(*) AS laender FROM log_land GROUP BY zone_typ ORDER BY zone_typ
+     ZONE_TYP             LAENDER              
+     -------------------- -------------------- 
+     DRITTLAND            35                   
+     EU                   27                   
+     INLAND               1                    
+
+---------------------------------------------------------
+Skript: 07_grenzen.tsv
+---------------------------------------------------------
+  63 Flaechen geladen, 57992 Stuetzpunkte, 0 repariert, 1079 ms
+
+---------------------------------------------------------
+Skript: 08_karte.sql
+---------------------------------------------------------
+  BEGIN EXECUTE IMMEDIATE 'DROP INDEX log_land_sx FORCE'; EXCEPTION WHEN OTHERS THEN NULL; E ...   ok
+  BEGIN EXECUTE IMMEDIATE 'CREATE INDEX log_land_sx ON log_land (grenze) ' || 'INDEXTYPE IS  ...   ok
+  CREATE OR REPLACE VIEW log_land_v AS SELECT l.iso2, l.name, l.zone_typ, l.eu_mitglied, l.z ...   ok
+  SELECT COUNT(*) AS laender, COUNT(grenze) AS mit_grenze FROM log_land
+     LAENDER              MIT_GRENZE           
+     -------------------- -------------------- 
+     63                   63                   
+  SELECT l.iso2, SDO_GEOM.VALIDATE_GEOMETRY_WITH_CONTEXT(l.grenze, 0.05) AS gueltig FROM log ...
+     ISO2                 GUELTIG              
+     -------------------- -------------------- 
+
+---------------------------------------------------------
+Skript: 10_daten2.sql
+---------------------------------------------------------
+  MERGE INTO log_tarif t USING (SELECT 'ZOLL_PAUSCHALE' schluessel, 85 wert, 'EUR' einheit,  ...   (3 Zeilen)
+  UPDATE log_ort o SET o.kapazitaet_teu = CASE o.name WHEN 'Hamburg' THEN 16 WHEN 'Berlin' T ...   (10 Zeilen)
+  UPDATE log_ware w SET w.fracht_eur_teu_km = CASE w.code WHEN 'EISEN' THEN 1.30 WHEN 'WEIZE ...   (6 Zeilen)
+  UPDATE log_bewegung b SET b.freigegeben_am = NVL( (SELECT MIN(n.zeitpunkt) FROM log_bewegu ...   ok
+  UPDATE log_bewegung b SET b.standgeld_eur = log_api.standgeld_eur(b.zeitpunkt, b.freigegeb ...   (1 Zeilen)
+  UPDATE log_bewegung b SET (b.fracht_eur, b.zoll_eur) = ( SELECT log_api.fracht_eur(b.dista ...   (3 Zeilen)
+  COMMIT   ok
+
+---------------------------------------------------------
+Skript: 11_job.sql
+---------------------------------------------------------
+  CREATE OR REPLACE PACKAGE log_job AS c_job CONSTANT VARCHAR2(30) := 'LOG_AUFTRAG_JOB'; --  ...   ok
+  CREATE OR REPLACE PACKAGE BODY log_job AS FUNCTION faellige_ausfuehren(p_karenz_min IN NUM ...   ok
+  BEGIN BEGIN DBMS_SCHEDULER.DROP_JOB(job_name => 'LOG_AUFTRAG_JOB', force => TRUE); EXCEPTI ...   ok
+
+
+=========================================================
+Fertig. 170 Anweisungen, 0 Fehler.
+  BEGIN FOR o IN (SELECT object_name, object_type FROM user_objects WHERE status <> 'VALID'  ...   ok
+
+Selbsttest
+---------------------------------------------------------
+   Laender                  63      [ok]
+   Laender mit Grenze       63      [ok]
+   Ungueltige Grenzen       0       [ok]
+   Staedte                  10      [ok]
+   Waren                    6       [ok]
+   Container                18      [ok]
+   Bewegungen               3       [ok]
+   Beim Zoll                0       [ok]
+   Ungueltige LOG-Objekte   0       [ok]
+   Spatial-Index Staedte    1       [ok]
+   Spatial-Index Laender    1       [ok]
+   -- Runde 2
+   Tarife                   3       [ok]
+   Staedte mit Kapazitaet   10      [ok]
+   Staedte ueber Kapazitaet 0       [ok]
+   Waren mit Frachtsatz     6       [ok]
+   Fahrten ohne Kosten      0       [ok]
+   Zollfahrt ohne Freigabe  0       [ok]
+   Auftraege                0       [ok]
+   Job LOG_AUFTRAG_JOB akti 1       [ok]
